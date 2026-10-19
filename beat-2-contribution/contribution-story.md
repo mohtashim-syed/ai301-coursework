@@ -9,8 +9,7 @@ files and no evidence uploads are part of Assignment 5.
 
 **Contribution Number:** [1]
 **Student:** [Student name]
-**GitHub Username:** [your GitHub username, exactly as it appears on your profile - no @, no
-profile URL. Your comments upstream are identified by this name.]
+**GitHub Username:** mohtashim-syed
 **Issue:** [GitHub issue link]
 **Pull Request:** [GitHub PR link, once opened]
 
@@ -55,10 +54,9 @@ happened; these entries are the toolkit's own timeline.
 All four entries are graded. Keep every heading below, and fill each
 one in the week it belongs to.
 
-**Unit 5: [one line on the tool work]**
+**Unit 5: issue-scout. Two scans of RAG/document-parsing repos, one strategy fix, one rubric patch (2026-10-18)**
 
-[2-4 sentences: what you built (the scout, your strategy), what broke
-or fell short, what changed because of it.]
+I installed the scout over my Unit 1 skill. I widened my fit profile from Path Review to Python RAG/LLM projects and the document-parsing libraries that feed them, and wrote five `gh search issues` queries across 17 named repos, with ranking filters that use only search fields (no assignee, updated within 180 days, bugs first, fewest comments). Scan 1 graded five issues and rejected all five: four already had open PRs, which my ranking couldn't see. My `doc` label filter had also silently matched `docling-document` and dropped every docling issue. Adding `--no-assignee` and `-linked:pr` to every query, matching labels by whole name, and adding a bug-in-title query took scan 2 to 3 accepts out of 5. But one of those accepts, docling#1705, had a comment saying it no longer reproduces on main. So I added an "already fixed" clause to my rubric's `bounded-scope` check. The Unit 1 harness on the 8 gold-accept bundles still agreed 8/8, and docling#1705 now rejects.
 
 **Unit 6: [one line on the tool work]**
 
