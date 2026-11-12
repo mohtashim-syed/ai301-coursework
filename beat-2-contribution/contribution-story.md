@@ -1,4 +1,4 @@
-# Contribution: [Issue Title]
+# Contribution: Conversational turn metrics score empty extraction as 1.0 (deepeval#3629)
 
 Path: `beat-2-contribution/contribution-story.md`
 
@@ -10,7 +10,7 @@ files and no evidence uploads are part of Assignment 5.
 **Contribution Number:** [1]
 **Student:** Mohtashim Syed
 **GitHub Username:** mohtashim-syed
-**Issue:** [GitHub issue link]
+**Issue:** https://github.com/confident-ai/deepeval/issues/3629
 **Pull Request:** [GitHub PR link, once opened]
 
 One repository, built across units 5 to 8, telling the whole story of your real
@@ -143,7 +143,7 @@ and how you solved them, or that none came up.]
 
 **Reproduction Evidence**
 
-- **Commit showing reproduction:** [link to commit in your fork]
+- **Commit showing reproduction:** https://github.com/mohtashim-syed/deepeval/commit/15037a51eda223f502dfe83e149ebbc8a08eb9b9
 - **Screenshots/logs:** [if applicable]
 - **My findings:** [what you discovered during reproduction; an
   honest, evidenced cannot-reproduce that led you to re-pick or ask
