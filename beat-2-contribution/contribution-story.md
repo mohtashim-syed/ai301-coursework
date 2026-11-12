@@ -8,7 +8,7 @@ format criteria grade exactly that. Your course repo link is the whole submissio
 files and no evidence uploads are part of Assignment 5.
 
 **Contribution Number:** [1]
-**Student:** [Student name]
+**Student:** Mohtashim Syed
 **GitHub Username:** mohtashim-syed
 **Issue:** [GitHub issue link]
 **Pull Request:** [GitHub PR link, once opened]
@@ -56,7 +56,7 @@ one in the week it belongs to.
 
 **Unit 5: issue-scout. Two scans of RAG/document-parsing repos, one strategy fix, one rubric patch (2026-10-18)**
 
-I installed the scout over my Unit 1 skill and wrote five `gh search issues` queries across 17 Python RAG/LLM and document-parsing repos, ranked by search fields only (no assignee, updated within 180 days, bugs first, fewest comments). Scan 1 rejected all five candidates: four already had open PRs my ranking couldn't see, and my `doc` label filter had silently matched `docling-document` and dropped every docling issue. Adding `--no-assignee` and `-linked:pr` to every query, matching labels by whole name, and adding a bug-in-title query took scan 2 to 3 accepts out of 5. One of those, docling#1705, had a comment saying it no longer reproduces on main, so I added an "already fixed" clause to my rubric's `bounded-scope` check: the Unit 1 harness on the 8 gold-accept bundles still agreed 8/8, and docling#1705 now rejects.
+I installed the scout over my Unit 1 skill and wrote five `gh search issues` queries across 17 Python RAG/LLM and document-parsing repos, ranked by search fields only (no assignee, updated within 180 days, bugs first, fewest comments). Scan 1 rejected all five candidates because four already had open PRs that my ranking couldn't see, so I added `--no-assignee` and `-linked:pr` to every query. My `doc` label filter had also matched `docling-document` by substring and silently dropped every docling issue, so I changed it to match whole label names, and with both fixes scan 2 accepted 3 of 5. One of those accepts, docling#1705, had a comment saying it no longer reproduces on main, so I added an "already fixed" clause to my rubric's `bounded-scope` check; the Unit 1 harness on the 8 gold-accept bundles still agreed 8/8, and docling#1705 now rejects.
 
 **Unit 6: [one line on the tool work]**
 
