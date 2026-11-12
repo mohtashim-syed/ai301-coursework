@@ -11,7 +11,7 @@ files and no evidence uploads are part of Assignment 5.
 **Student:** Mohtashim Syed
 **GitHub Username:** mohtashim-syed
 **Issue:** https://github.com/confident-ai/deepeval/issues/3629
-**Pull Request:** [GitHub PR link, once opened]
+**Pull Request:** https://github.com/confident-ai/deepeval/pull/3634
 
 One repository, built across units 5 to 8, telling the whole story of your real
 contribution. Fill it as you work, not at the end — the sections below ask for evidence that
@@ -78,24 +78,35 @@ drafted, what you did with the draft.]
 
 ## Why I Chose This Issue
 
-[1-2 paragraphs in your own words: how you searched, what your scan
-surfaced, what your scout's verdict said, why this issue fits your
-profile, and what you hope to learn. If your scout's verdict on it
-was reject and you chose it anyway, say so here and say why; choosing
-against your own tool silently is what loses points. Close with an
-honest read of the tool itself: where the scout fell short on a real
-wild search and what you changed or would change, or what convinced
-you it held up. **Record the link to your claim comment in this section too.**
-Not claimed yet? Write `claim pending` and today's date where the link goes,
-and add the link the moment your claim lands.]
+I didn't find this issue on my first try.
+
+- **My Issue Selection site picks didn't work out.** I graded checkstyle#3547 and #11163, ITK#1024, CTSM#1621 and #1127, and cherry-studio#17090. My scout rejected every one, mostly for live claims or open-ended scope, and none of them was in the Python RAG/evaluation space my fit profile asks for.
+- **My scan-2 accepts had gone stale.** When I went back to them on 2026-11-11, markitdown#2288 had an open PR (#2721), and docling#3170 had been traced to docling-parse, a C++ library. My scan notes had already flagged that "the fix lives in another repo" risk for docling#3170.
+- **Scan 3 found one accept.** I re-ran my scout with the same strategy. It returned 59 results and 11 after ranking, and of the top five only confident-ai/deepeval#3629 was accepted. All six required checks passed: no assignee, no PR and no claim; a bug report with a file-by-file trace; a repo that merged PRs the same day; and no AI ban in CONTRIBUTING.md. It failed two preferred checks: it has no newcomer label, and the issues I sampled had no maintainer reply yet.
+
+It fits my profile almost word for word: "evaluation of LLM output" in Python, reproducible without a paid API key because a stub judge is enough. What I want to learn is how an evaluation framework decides what a score means when the judge model fails, which is exactly the kind of quiet failure that would mislead me in my own RAG work. Because this came from my scout and not the Issue Selection site, it needs my instructor's OK.
+
+**My read on the scout:** it held up on the verdict, but not on freshness.
+
+- **The verdict held up because I checked the code.** The rubric passed `bounded-scope`, but reading the code showed the fix needs a policy decision: 1.0 for an empty claim list is a deliberate choice that a test asserts. My rubric has no check for "the issue's proposed fix conflicts with an existing test". I handled it by proposing two options in my claim instead of promising a score change.
+- **Freshness is where it fell short.** Accepts went stale in three weeks, and two of the five grading slots went to issues I'd already rejected.
+
+Claim comment: https://github.com/confident-ai/deepeval/issues/3629#issuecomment-6812196654 (2026-11-11)
 
 **Toolkit**
 
-- Tool: issue-scout (your scout: your search strategy, your rubric),
-  and how you used it
-- What it produced: [the scan and its verdict on this issue, described]
-- Difficulties: [where it fell short, or "none met" if none did]
-- What changed: [what you patched or would update, or "nothing"]
+- Tool: issue-scout. I ran `issue-scout: run a scan` with my unchanged `search-strategy.md` (5 `gh search issues` queries over 17 Python RAG/LLM and document-parsing repos), then graded the top 5 with `rubric.md`.
+- What it produced:
+  - Scan 3: 59 unique results, 11 after ranking, 1 accept (deepeval#3629, ranked 1st as a `[Bug]` title with 1 comment, updated that day) and 4 rejects.
+  - The rejects: dspy#10732 had an open PR, dspy#8594 had a 49-day-old claim, and docling#4147 and docling#1705 already looked fixed.
+- Difficulties:
+  - Ranking has no memory, so 2 of the 5 graded slots (about $0.40) went to issues I'd rejected before.
+  - Both scan-2 accepts went stale within three weeks.
+  - The rubric passed `bounded-scope` without noticing that the issue's implied fix conflicted with an existing test.
+- What changed:
+  - I logged a dated note in `scan-notes.md`: add a skip-list of past reject URLs to the strategy, and re-grade right before claiming.
+  - I re-checked the issue just before claiming and again before opening the PR.
+  - I read the code before claiming, which is what turned "change 1.0 to 0" into the safer option 1.
 
 ---
 
@@ -103,26 +114,43 @@ and add the link the moment your claim lands.]
 
 **Problem Description**
 
-[In your own words, what is broken or missing?]
+deepeval's conversational "turn" metrics use an LLM judge in steps. It extracts claims or verdicts from the conversation, then scores them. When that step returns an empty list, the metric can't tell "there was nothing to check" from "the judge failed". It gives a perfect score and an explanation that hides the failure. A weak or local judge model can therefore make a conversation look perfect while nothing was actually evaluated.
 
 **Expected Behavior**
 
-[What should happen?]
+When the judge returns nothing for content that exists, the result should say so. For example: "The evaluation model returned no verdicts for the 2 retrieval contexts". Then someone reading the report can see that the 1.0 came from an evaluation that didn't happen, not from a good answer. A reply that really has nothing to check, like "Sure, happy to help!", can keep its 1.0. That's a deliberate choice the existing tests assert.
 
 **Current Behavior**
 
-[What actually happens?]
+With a stub judge that returns empty lists, and a conversation that has two retrieval contexts and a substantive answer, all four metrics score 1.0, exactly as they do for "Sure, happy to help!".
+
+- **Faithfulness** gives `<no claims to verify>`.
+- **Contextual precision, recall and relevancy** say "There were no retrieval contexts in the given turns". That's false: there were two.
 
 **Affected Components**
 
-[Which parts of the codebase are involved?]
+- `deepeval/metrics/turn_contextual_precision/turn_contextual_precision.py`, `turn_contextual_recall/turn_contextual_recall.py` and `turn_contextual_relevancy/turn_contextual_relevancy.py`:
+  - `_get_<metric>_scores` / `_a_get_<metric>_scores` build the window's `retrieval_context`.
+  - `_get_interaction_score_and_reason` / `_a_get_interaction_score_and_reason` hold the empty-verdicts branch. It never learns whether any context existed.
+- `deepeval/metrics/turn_faithfulness/turn_faithfulness.py`: the empty-verdicts branch of `_get_interaction_score_and_reason` and its async twin.
+- `deepeval/metrics/utils/generation.py`: `generate_with_schema_and_extract` accepts a valid schema with an empty list without complaint. It's where an empty list enters, but I'm not changing it.
+- `tests/test_metrics/test_turn_faithfulness_metric_empty_verdicts.py`: pins the faithfulness 1.0.
 
 **Toolkit**
 
 - Tool:
+  - Claude Code with `gh`, to read the issue thread and the code on deepeval `main` (`debe795`).
+  - `grep` for every empty-input guard (`number_of_verdicts == 0`, `empty_score`) across `deepeval/metrics`.
 - What it produced:
+  - A map of every place an empty list becomes a score.
+  - The finding that the three contextual metrics return `[]` early only when `retrieval_context` is empty, but share the same 1.0 branch with a judge that returned nothing.
+  - The existing test that asserts the faithfulness 1.0.
 - Difficulties:
+  - The issue presents all four metrics as one bug, which they aren't.
+  - Its strongest evidence, the "unreachable `return 0`" in precision, turned out to be harmless: falling through returns 0 anyway.
 - What changed:
+  - I wrote "Understanding" from the code, not from the issue text.
+  - I narrowed the planned fix to the reasons, leaving the scores alone, and said so in my claim before writing code.
 
 ---
 
@@ -160,10 +188,14 @@ and add the link the moment your claim lands.]
 
 **Toolkit**
 
-- Tool:
-- What it produced:
+- Tool: Claude Code. I used it to set up the virtual environment and to write `repro/issue_3629.py`, which builds a stub `DeepEvalBaseLLM` modeled on the one in deepeval's own empty-verdicts test. I ran the script against `main`.
+- What it produced: the before-fix table, eight runs (four metrics × two conversations), all scoring 1.0, with the wrong "no retrieval contexts" reason. It's committed as `15037a5` on my fork's `repro/3629-empty-extraction` branch, together with the saved output.
 - Difficulties:
+  - The first run printed `None` for every window reason, because the metric doesn't keep its per-window scores. They only appear in `verbose_logs`.
+  - Python 3.14 floods the output with a `SyntaxWarning` from deepeval's `loop.py`.
 - What changed:
+  - The script now reads the `Reason:` line from `verbose_logs`, and runs with `-W ignore`.
+  - I kept the repro on its own branch, so the fix branch and the PR don't include it.
 
 ---
 
@@ -273,7 +305,7 @@ Deviations:
 
 ## Pull Request
 
-**PR Link:** [GitHub PR URL when opened]
+**PR Link:** https://github.com/confident-ai/deepeval/pull/3634
 
 **PR Description:** [what the PR says; much of the content above
 adapts into it]
