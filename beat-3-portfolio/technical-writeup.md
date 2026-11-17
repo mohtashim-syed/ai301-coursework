@@ -1,100 +1,56 @@
-<!--
-OUTLINE. Everything inside <!- - - -> comments is an instruction to you, and GitHub won't show it.
-Write every sentence yourself, replacing each comment as you go. The fenced code blocks are your
-own proof from this term: keep them, and put your own sentence above each one that says what it
-proves. Target 500–1,000 words. Facts and dates: drafts/assignment6-evidence.md.
-
-Title: add a line ABOVE this comment, "# ...", that says what you did. It should name both
-the fix and the tool, e.g. the deepeval bug + the scout that found it.
--->
+# Making Empty AI Evaluations Visible: A deepeval Fix and the Scout That Found It
 
 ## Overview
 
-<!--
-One short paragraph, 4–6 sentences, covering:
-- What deepeval is (an open-source Python library for evaluating LLM output), in one clause.
-- The problem: when the judge model returns nothing, four conversation metrics give a perfect
-  1.0, and three of them say "no retrieval contexts" even when there were some.
-- What you did: you found the issue with your own scout, reproduced it, and opened PR #3634.
-  The PR fixes the misleading explanations and changes no scores.
-- Your tool part: the scout's search strategy and rubric are yours. Name them.
-- How it stands today: PR open, not merged; the issue's opener reviewed it; no maintainer review yet.
-- Link the PR: https://github.com/confident-ai/deepeval/pull/3634
--->
+deepeval is an open-source Python library for evaluating language-model output. I investigated a bug in four conversation metrics: when the judge model returned no results, each metric still gave a perfect 1.0, and three incorrectly said there were no retrieval contexts even when contexts existed. I found the issue with an issue-scout tool whose GitHub search strategy and grading rules I built and refined during AI301. After reproducing the behavior, I opened [PR #3634](https://github.com/confident-ai/deepeval/pull/3634) to make the explanations accurate without changing scores. As of November 17, 2026, the PR is open and unmerged; the issue's author has reviewed it, and a newer review has identified a remaining edge case.
 
 ## What happened
 
-<!--
-Tell it in time order. Subheadings help. Rubric points, 10 each: real moments in order,
-2+ proofs on the page, proof from real work, a change you made, a result that landed.
-The contribution AND the tool each need their own proof.
--->
-
 ### Finding the issue
 
-<!--
-- Oct 18: scan 1 rejected all 5 (4 had open PRs your ranking couldn't see). You added
-  -linked:pr / --no-assignee, and scan 2 accepted 3 of 5.
-- Scan 2 also accepted docling#1705, which a commenter said no longer reproduces.
-  This is your TOOL CHANGE moment: say what happened, then show the rule before and after (below).
-- Say what the re-run proved (8/8 gold accepts, docling#1705 now rejects).
--->
+I started by improving the tool I would use to find a contribution. On October 18, my first scout scan rejected all five graded issues; four already had open pull requests that my ranking missed. I added `-linked:pr` and `--no-assignee` to the searches. The second scan accepted three of five, but one accepted issue, `docling#1705`, had a recent comment saying its bug no longer reproduced. That was a mistake in my grading rule, not evidence that the issue was suitable.
 
-Before (Unit 1 rubric, `bounded-scope`):
+The `bounded-scope` rule originally checked only this historical PR condition:
+
 ```
 (d) fewer than 2 closed-unmerged PRs in its history when the issue is more than 1 year old.
 ```
-After (2026-10-18):
+
+I added a freshness check so a recent report of an already-fixed bug could disqualify an issue:
+
 ```
 (d) fewer than 2 closed-unmerged PRs in its history when the issue is more than 1 year old;
 (e) no comment from the last 90 days reports that the problem no longer reproduces on the current
 default branch or latest release, unless a later comment shows it still does.
 ```
 
-<!--
-- Nov 11: your earlier accepts had gone stale, so you ran scan 3: 59 results, 11 after ranking,
-  1 accept (deepeval#3629).
-- TOOL RESULT THAT LANDED: in that same scan, clause (e) rejected two already-fixed issues
-  (docling#1705, docling#4147). Say this in your words.
--->
+The changed rule rejected `docling#1705` while the eight known-good acceptance examples still passed eight out of eight. On November 11, earlier picks had gone stale, so I ran scan 3: 59 search results narrowed to 11 by ranking, with one of the five graded issues accepted, `deepeval#3629`. In that scan, the new clause also rejected two already-fixed issues, `docling#1705` and `docling#4147`. This was a concrete improvement to my tool, not just a rewritten rule.
 
 ### Reading the code before claiming
 
-<!--
-- The issue implied changing the 1.0 score. You found a test that keeps 1.0 on purpose.
-- CONTRIBUTION CHANGE moment: your plan changed from "change the score" to "fix the explanation".
-  Say why the test changed your mind. Quote the two lines below.
-- You put two options in your claim comment and asked which one they wanted:
-  https://github.com/confident-ai/deepeval/issues/3629#issuecomment-6812196654
--->
+Issue [#3629](https://github.com/confident-ai/deepeval/issues/3629) sounded like a scoring bug: an empty answer from the AI judge still produced 1.0. My first instinct was to lower that score. But tracing the code and reading the existing faithfulness test changed my plan. The test explicitly required an empty-verdict case to keep the perfect score:
 
 ```python
     score, reason = result  # must be unpackable
     assert score == 1.0
 ```
 
+Changing the default would break established behavior for conversations with nothing factual to verify. The more defensible first contribution was to fix the misleading *reason*, not the score. In [my claim comment](https://github.com/confident-ai/deepeval/issues/3629#issuecomment-6812196654), I offered that narrow approach and a second option with configurable scoring, then asked which was preferred. The issue's author favored the narrow approach.
+
 ### Reproducing it
 
-<!--
-- No API key: a stub judge that returns empty lists. One sentence on why that's realistic
-  (small or local judge models).
-- What the output shows: two retrieval contexts in the conversation, yet the reason says none.
--->
+I wrote a small reproduction using a stub judge that returned valid responses containing empty lists. That needed no API key and modeled a plausible failure from a smaller or local model: it can return the right output shape without producing useful findings. The conversation contained two retrieval contexts, yet the output said there were none. The faithfulness reason likewise made failed extraction look like a harmless absence of claims:
 
 ```
 TurnContextualRecallMetric    substantive reply  score=1.0  window reason='There were no retrieval contexts in the given turns to evaluate the contextual recall.'
 TurnFaithfulnessMetric        substantive reply  score=1.0  window reason='<no claims to verify>'
 ```
 
-<!-- Optional small moment: the first run printed None for every reason, because they only live in verbose_logs. -->
+I also learned that these per-window reasons were in `verbose_logs`, rather than the top-level reason field I initially inspected.
 
 ### The fix
 
-<!--
-- What changed: the caller passes the context count, and a new helper picks the right message.
-  Faithfulness gets an honest explanation. Scores unchanged.
-- Say what you deliberately did NOT change, and why (the tested 1.0; option 2 left for later).
--->
+For contextual precision, recall, and relevancy, I passed the actual retrieval-context count from the caller and added a helper to select the correct message. Zero contexts still produce the old wording; contexts with zero judge verdicts now report that the judge returned none. For faithfulness, I replaced the ambiguous message with one that says no claims were extracted and acknowledges that extraction may have failed. This excerpt from the recall change shows the distinction:
 
 ```diff
 +    def _empty_verdicts_reason(self, retrieval_context_count: int) -> str:
@@ -114,40 +70,26 @@ TurnFaithfulnessMetric        substantive reply  score=1.0  window reason='<no c
 +            return 1, self._empty_verdicts_reason(retrieval_context_count)
 ```
 
+I deliberately kept every score unchanged, including the tested 1.0 behavior, and left optional scoring policy for a future PR. I also left an unreachable `return 0` in precision untouched, although I had originally said I would remove it.
+
 ### Proving it
 
-<!--
-- 14 new tests. Without the fix, 11 fail. The 3 that pass are backward-compatibility checks,
-  which is expected. Say this in your words.
-- The 20 existing turn-metric tests that run pass before and after.
-- The same repro script, after the fix (below).
--->
+I added 14 tests covering the contextual metrics and faithfulness, synchronous and asynchronous paths, and compatibility for old callers. Without the fix, 11 failed; the three passing tests were expected backward-compatibility checks. The 20 existing runnable turn-metric tests passed both before and after the change. With the patch, the same reproduction now said what actually happened while keeping 1.0:
 
 ```
 TurnContextualRecallMetric    substantive reply  score=1.0  window reason='The evaluation model returned no verdicts for the 2 retrieval context(s) in the given turns, so the contextual recall could not be evaluated.'
 ```
 
+The combined targeted run reported 34 passed and 35 skipped; the skipped tests required an API key. I documented the reproduction and results in the PR rather than relying on a claim that the fix worked.
+
 ### What happened next
 
-<!--
-- RESULT THAT LANDED: the issue's opener (kittimzhe, a contributor, NOT a maintainer) confirmed your
-  analysis on the issue and reviewed the PR. Quote ONE short line from them, attributed.
-- Small second change: pr-title-check failed ("No release type found in pull request title"),
-  so you added "fix:" and it passed.
-- Be honest about CI: three failing checks are unrelated (one test, lint on untouched files, Vercel).
--->
+I opened PR #3634 on November 12. Its first title failed the `pr-title-check` because it lacked a release-type prefix; I changed it to start with `fix:`, and that check passed. The issue's author, **kittimzhe**, reviewed the PR and wrote that it “matches option 1 cleanly.” They are the reporting contributor, not a project maintainer. Their review also identified unrelated failing CI checks: a core test, formatting in files I did not edit, and a Vercel deployment authorization requirement.
+
+On November 17, another reviewer found an uncovered faithfulness case: claim extraction can succeed while verdict generation returns nothing. In that situation, my new text incorrectly says no claims were extracted. The reviewer supplied a suggested patch and tests. That feedback matters: the PR is a reviewed proposal, not a merged or fully finished fix.
 
 ## Limitations and what's next
 
-<!--
-Pick 2–3 real limits, each followed by the next step it leads to:
-- Faithfulness still scores 1.0 whether there was nothing to check or extraction failed. The
-  explanation admits it, but the score can't tell. Next: option 2, an opt-in score for empty
-  extraction, once this lands.
-- Reviewer suggestions not done yet: a stable, searchable marker in the message; dropping the
-  unneeded f-prefixes. Next: push those to the PR.
-- Your claim said you'd remove the unreachable return 0, and you didn't. Own it.
-- Scout: no memory of past rejects (2 of 5 grading slots wasted in scan 3), and accepts go
-  stale within about 3 weeks. Next: a skip-list of rejected URLs, and re-grade right before claiming.
-- PR status: open, waiting on a maintainer.
--->
+The biggest immediate task is to handle that newly reported faithfulness case, distinguish the stages accurately, and run the suggested tests before updating PR #3634. I also need to consider a stable phrase that reporting tools can search for, remove unnecessary `f` prefixes, and address the unreachable `return 0` I left behind. A possible later contribution is an opt-in alternative score for empty extraction; the current patch makes failures more visible but cannot distinguish them numerically from genuine nothing-to-check cases.
+
+My scout needs work too. It has no memory of rejected URLs, so scan 3 spent two of its five grading slots on previously rejected issues, and accepted picks can become stale within weeks. I would add a rejection skip-list and re-grade immediately before claiming. Until the revised fix is reviewed and merged, I will describe this work as a pull request I opened, not a fix that has landed in deepeval.

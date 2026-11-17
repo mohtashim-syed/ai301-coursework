@@ -1,31 +1,13 @@
-<!--
-OUTLINE: delete this whole comment once you've written the post. Plain text only: no headings,
-tables or code blocks. 60–250 words (a link = 1 word, a hashtag = 1 word). First person, complete
-sentences, written for someone who doesn't code. Every claim must match your technical write-up.
+I opened a fix for a bug in deepeval, an open-source library used to test AI systems. When an AI grader returned no results, the library could report a perfect score of 1.0 and give an explanation that hid what actually went wrong.
 
-1. Two opening sentences (LinkedIn cuts off after these), starting from your lecture lines:
-   - What you did: opened a fix in an open-source AI testing library (deepeval).
-   - What the bug did, in plain words: when the AI "grader" returned nothing, the tool reported
-     a perfect score and an explanation that hid the failure.
-   Use "opened a fix", NOT "fixed". The PR isn't merged.
+I found the issue using an AI-assisted search tool I built during CodePath's AI301 course. The tool scans GitHub issues and evaluates them against rules I designed. Along the way, I had to improve those rules after my tool recommended problems that had already been resolved.
 
-2. How you found it (1–2 sentences): a search tool you built this term that scans GitHub
-   and grades issues against rules you wrote. Mention one rule you fixed after it let a bad
-   pick through, but only if your write-up tells that story too. Skip jargon: no "rubric",
-   "eval harness", "retrieval context".
+Before writing the fix, I studied the existing code and tests. I discovered that the perfect score was intentional, so I focused on making the explanation accurate instead of changing the score.
 
-3. How it ended (1–2 sentences): the fix is open and waiting on the project's maintainers. The
-   person who reported the bug reviewed it and agreed with the approach. Don't call them a maintainer.
+I reproduced the problem, added tests, and opened a pull request. The person who originally reported the bug reviewed my work and agreed with the approach. The pull request is still open and awaiting maintainer review.
 
-4. Why it matters / what it taught you (1–2 sentences): pick ONE, e.g. reading the existing
-   code and tests before changing anything changed your plan; or a perfect score can hide a
-   failure; or your own tools needed fixing too.
-
-5. Last line, the one link: https://github.com/confident-ai/deepeval/pull/3634
-   Hashtags (optional) go after it, e.g. #opensource #python #AI
-
-Check the count with:  wc -w beat-3-portfolio/linkedin-post.md
-(It counts this comment too, so delete the comment first.)
--->
+This experience taught me that reliable AI systems need more than passing scores. They also need explanations people can trust.
 
 https://github.com/confident-ai/deepeval/pull/3634
+
+#OpenSource #Python #AI #CodePath
