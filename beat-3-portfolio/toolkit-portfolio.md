@@ -67,6 +67,8 @@ Gaps in your procedure
 - No step reads the house rules in `scope.md` (piggybacking, branch naming), so the overlap with
   Znasif's plan isn't graded anywhere.
 ```
+I acted on the stop-word catch before posting. `beat-1-sandbox/unit-3/plan.md` (line 80) says: "Stop words stayed as they were… I dropped them, because no test or repro step needed them."
+
 For deepeval#3629, the plan itself changed after I read the code. The issue implied changing a 1.0 score to 0. I found a test that pins 1.0 on purpose, so my claim comment offered option 1 (fix the false reason, keep the scores) instead. The fix is commit `a311ce2` with 14 new tests, 11 of which fail without it.
 
 ## Inventory
@@ -108,6 +110,12 @@ Date: 2026-11-11
 Friction: my first repro run printed `None` for every window reason, and the PR's `pr-title-check` failed with "No release type found in pull request title".
 Change: I read the reasons from `verbose_logs` in the script, and I retitled the PR with a `fix:` prefix.
 Result: the repro showed the wrong reason before the fix and the corrected one after it, and `pr-title-check` passed.
+
+**Beat 6**
+Date: 2026-11-17
+Friction: chilltongx (a reviewer, not a maintainer) found that when claims are extracted but the judge returns 0 verdicts, the reason wrongly says "No claims were extracted". Their stub test failed on `a311ce2`, and they offered a patch.
+Change: I wrote my own fix, commit `e2146ed`, not their patch cherry-picked. Both per-window callers now pass `claims_count=len(claims)`, and the reason reads "returned no verdicts for the N claim(s) extracted… could not be verified". I also dropped the unneeded `f` prefixes that kittimzhe had pointed out.
+Result: 3 new tests fail without the fix and pass with it. The turn suite gives 37 passed and 35 skipped, and `black --check` passes with 25.12.0, the version CI uses. I replied on [deepeval#3634](https://github.com/confident-ai/deepeval/pull/3634) on 2026-11-17. There is still no maintainer review.
 
 ## Limitations and What's Next
 
